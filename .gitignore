@@ -1,0 +1,68 @@
+# =========================
+# 🔹 Python (Backend)
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Environment Variables (VERY IMPORTANT)
+.env
+.env.*
+
+# Python build files
+build/
+dist/
+*.egg-info/
+
+# =========================
+# 🔹 Node.js (Frontend)
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+dist/
+build/
+
+# Environment
+.env
+.env.*
+
+# =========================
+# 🔹 Logs
+# =========================
+*.log
+
+# =========================
+# 🔹 OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# 🔹 IDE / Editor
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# 🔹 Mongo / Local DB
+# =========================
+data/
+*.db
+
+# =========================
+# 🔹 LangChain / AI stuff (optional)
+# =========================
+*.cache
+.cache/
+
