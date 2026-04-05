@@ -60,7 +60,8 @@ export default function ChatSidebar() {
     addMessage({ role: 'user', content: question, id: Date.now(), created_at: new Date() })
 
     try {
-      const response = await fetch('/api/chat/send', {
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${baseUrl}/api/chat/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
