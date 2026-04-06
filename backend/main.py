@@ -5,9 +5,9 @@ FastAPI entrypoint for the CRAG system.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from database import init_db
-from auth import router as auth_router
-from chat import router as chat_router
+from backend.database import init_db
+from backend.auth import router as auth_router
+from backend.chat import router as chat_router
 
 
 @asynccontextmanager
