@@ -61,8 +61,10 @@ data/
 *.db
 
 # =========================
-# 🔹 LangChain / AI stuff (optional)
+# 🔹 LangChain / AI stuff
 # =========================
 *.cache
 .cache/
+faiss_indexes/
+tmp/
 
