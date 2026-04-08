@@ -13,7 +13,6 @@ langchain-community
 langchain-text-splitters
 langchain-huggingface
 langgraph
-ollama
 duckduckgo-search
 tavily-python
 pypdf
