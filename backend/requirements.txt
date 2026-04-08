@@ -11,12 +11,9 @@ python-dotenv
 bcrypt
 langchain
 langchain-community
-langchain-ollama
 langchain-text-splitters
 langchain-huggingface
 langgraph
-ollama
-duckduckgo-search
 tavily-python
 pypdf
 sentence-transformers
