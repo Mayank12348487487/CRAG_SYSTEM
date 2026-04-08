@@ -9,9 +9,7 @@ Long-term:  Summarized facts per user (stored in `long_term_memory` collection),
 from datetime import datetime
 from typing import List, Optional
 from database import messages_col, long_term_col
-from langchain_ollama import ChatOllama
-
-llm = ChatOllama(model="mistral:7b")
+from rag import get_model
 
 SHORT_TERM_LIMIT = 10          # last N messages kept in context
 SUMMARIZE_EVERY = 20           # summarize long-term every N messages
@@ -100,6 +98,7 @@ New conversation turns:
 Create a concise updated summary capturing the most important facts about this user's interests, topics discussed, and notable information. Keep it under 300 words.
 
 Summary:"""
+    llm = get_model()
     result = llm.invoke(prompt)
     return result.content
 

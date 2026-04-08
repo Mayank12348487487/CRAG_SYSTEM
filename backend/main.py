@@ -27,13 +27,13 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS — allow React dev server
+# CORS — allow React dev server and deployed frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173", 
+        "http://localhost:5173",
         "http://localhost:3000",
-        "https://crag-system-pdf.onrender.com"
+        "https://crag-system-pdf.onrender.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -55,7 +55,5 @@ async def api_health():
 
 
 if __name__ == "__main__":
-    # Render provides the port in the PORT environment variable
     port = int(os.environ.get("PORT", 8000))
-    # Standard Uvicorn startup
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
