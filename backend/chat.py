@@ -120,19 +120,18 @@ async def upload_documents(
     current_user: dict = Depends(get_current_user)
 ):
     user_id = str(current_user["_id"])   # ← was missing!
-    temp_dir = "./tmp"
-    os.makedirs(temp_dir, exist_ok=True)
+    import tempfile
+    import shutil
+    
     file_paths = []
 
     for file in files:
         if file.filename.endswith(".pdf"):
-            path = os.path.join(temp_dir, file.filename)
             try:
-                contents = await file.read()          # async read
-                with open(path, "wb") as f:
-                    f.write(contents)
-                file_paths.append(path)
-                print(f"[Upload] Saved {file.filename} → {path}")
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                    shutil.copyfileobj(file.file, tmp)
+                    file_paths.append(tmp.name)
+                print(f"[Upload] Saved {file.filename} → {tmp.name}")
             except Exception as e:
                 print(f"[Upload] Failed to save {file.filename}: {e}")
 
