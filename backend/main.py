@@ -15,7 +15,7 @@ from chat import router as chat_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    await init_db()
+    #await init_db()
     yield
     # Shutdown (cleanup if needed)
 

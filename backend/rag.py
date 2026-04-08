@@ -3,16 +3,12 @@ Enhanced CRAG pipeline with:
 - Per-user isolated FAISS indexes (persisted across logout/restart)
 - Short-term memory injection (last N turns from session)
 - Long-term memory injection (user's summarized knowledge)
+
+All heavy imports (langchain, torch, faiss, etc.) are deferred to first use
+so that the server can bind its port instantly on Render.
 """
 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
 from typing import TypedDict, List, Optional
-from langgraph.graph import StateGraph, START, END
-from langchain_community.document_loaders import PyMuPDFLoader
-from pydantic import BaseModel, Field
-from langchain_core.output_parsers import JsonOutputParser
-from tavily import TavilyClient
 from dotenv import load_dotenv
 import os
 import shutil
@@ -61,8 +57,9 @@ def _user_index_path(user_id: str) -> str:
     return os.path.join(INDEX_BASE, user_id)
 
 
-def _load_store(user_id: str) -> Optional[FAISS]:
+def _load_store(user_id: str):
     """Load a user's FAISS index from disk into the cache."""
+    from langchain_community.vectorstores import FAISS
     path = _user_index_path(user_id)
     if os.path.exists(path):
         try:
@@ -75,7 +72,7 @@ def _load_store(user_id: str) -> Optional[FAISS]:
     return None
 
 
-def _get_store(user_id: str) -> Optional[FAISS]:
+def _get_store(user_id: str):
     """Return cached store or load from disk. Returns None if user has no index."""
     if user_id not in _user_stores:
         _load_store(user_id)
@@ -95,6 +92,9 @@ def get_indexed_files(user_id: str) -> List[str]:
 
 def add_pdfs_to_index(file_paths: List[str], user_id: str) -> int:
     """Index PDFs into this user's private FAISS store and persist to disk."""
+    from langchain_community.document_loaders import PyMuPDFLoader
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    from langchain_community.vectorstores import FAISS
     docs = []
     for path in file_paths:
         try:
@@ -186,8 +186,11 @@ class CRAGState(TypedDict):
 
 # ─── Nodes ─────────────────────────────────────────────────────────────────────
 
-class ChatterOutput(BaseModel):
-    is_chatter: bool = Field(description="Is the user input just casual chatter or a greeting?")
+def _get_chatter_output_class():
+    from pydantic import BaseModel, Field
+    class ChatterOutput(BaseModel):
+        is_chatter: bool = Field(description="Is the user input just casual chatter or a greeting?")
+    return ChatterOutput
 
 def detect_chatter(state: CRAGState):
     question = state["question"]
@@ -201,6 +204,8 @@ def detect_chatter(state: CRAGState):
     q_lower = question.lower()
     needs_web = any(kw in q_lower for kw in web_trigger_keywords)
 
+    from langchain_core.output_parsers import JsonOutputParser
+    ChatterOutput = _get_chatter_output_class()
     parser = JsonOutputParser(pydantic_object=ChatterOutput)
     prompt = f"""You are a helpful routing assistant. Determine if the user's input is a casual greeting or conversational chatter (like "hi", "how are you", "what is your name") OR if it is a rigid question that requires searching a database for an exact answer.
 
@@ -269,8 +274,11 @@ def retrieve_node(state: CRAGState):
     }
 
 
-class GradeOutput(BaseModel):
-    is_relevant: bool = Field(description="Are Documents relevant?")
+def _get_grade_output_class():
+    from pydantic import BaseModel, Field
+    class GradeOutput(BaseModel):
+        is_relevant: bool = Field(description="Are Documents relevant?")
+    return GradeOutput
 
 
 def grade_documents(state: CRAGState):
@@ -282,6 +290,8 @@ def grade_documents(state: CRAGState):
         return {"is_relevant": False, "step_log": step_log + ["grade: no context, marking irrelevant"]}
 
     content = "\n".join([d.page_content for d in context])
+    from langchain_core.output_parsers import JsonOutputParser
+    GradeOutput = _get_grade_output_class()
     parser = JsonOutputParser(pydantic_object=GradeOutput)
 
     prompt = f"""You are a strict evaluator grading document relevance.
@@ -321,6 +331,7 @@ def web_search_node(state: CRAGState):
     step_log = state.get("step_log", [])
 
     try:
+        from tavily import TavilyClient
         client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
         web_result = client.search(question, search_depth="advanced", max_results=5)
         web_context = "\n\n".join(
@@ -398,27 +409,39 @@ def decide_after_grade(state: CRAGState):
         return "generate"
 
 
-builder = StateGraph(CRAGState)
+_graph = None
 
-builder.add_node("detect_chatter", detect_chatter)
-builder.add_node("generate_chatter", generate_chatter)
-builder.add_node("retrieve", retrieve_node)
-builder.add_node("grade", grade_documents)
-builder.add_node("web_search", web_search_node)
-builder.add_node("generate", generate_answer)
+def get_graph():
+    """Lazily build and cache the CRAG LangGraph.
+    This prevents heavy compilation from blocking port binding on startup."""
+    global _graph
+    if _graph is None:
+        from langgraph.graph import StateGraph, END
+        print("[RAG] Compiling LangGraph...")
+        builder = StateGraph(CRAGState)
 
-builder.set_entry_point("detect_chatter")
-builder.add_conditional_edges(
-    "detect_chatter", decide_chatter,
-    {"chatter": "generate_chatter", "rag": "retrieve"}
-)
-builder.add_edge("generate_chatter", END)
-builder.add_edge("retrieve", "grade")
-builder.add_conditional_edges(
-    "grade", decide_after_grade,
-    {"generate": "generate", "web_search": "web_search"}
-)
-builder.add_edge("web_search", "generate")
-builder.add_edge("generate", END)
+        builder.add_node("detect_chatter", detect_chatter)
+        builder.add_node("generate_chatter", generate_chatter)
+        builder.add_node("retrieve", retrieve_node)
+        builder.add_node("grade", grade_documents)
+        builder.add_node("web_search", web_search_node)
+        builder.add_node("generate", generate_answer)
 
-graph = builder.compile()
+        builder.set_entry_point("detect_chatter")
+        builder.add_conditional_edges(
+            "detect_chatter", decide_chatter,
+            {"chatter": "generate_chatter", "rag": "retrieve"}
+        )
+        builder.add_edge("generate_chatter", END)
+        builder.add_edge("retrieve", "grade")
+        builder.add_conditional_edges(
+            "grade", decide_after_grade,
+            {"generate": "generate", "web_search": "web_search"}
+        )
+        builder.add_edge("web_search", "generate")
+        builder.add_edge("generate", END)
+
+        _graph = builder.compile()
+        print("[RAG] LangGraph compiled.")
+    return _graph
+

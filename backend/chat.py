@@ -10,7 +10,7 @@ from auth import get_current_user
 from database import messages_col
 from models import ChatRequest, MessageOut
 from memory import get_short_term, get_long_term, save_turn, format_short_term
-from rag import graph, add_pdfs_to_index, clear_index, get_indexed_files, remove_pdf_from_index
+from rag import get_graph, add_pdfs_to_index, clear_index, get_indexed_files, remove_pdf_from_index
 import json
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -71,7 +71,7 @@ async def send_message(body: ChatRequest, current_user: dict = Depends(get_curre
             final_answer = ""
             sources = []
 
-            async for event in graph.astream(state_input):
+            async for event in get_graph().astream(state_input):
                 for node_name, node_output in event.items():
                     # Emit step event
                     step_info = {
