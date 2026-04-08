@@ -16,7 +16,6 @@ langgraph
 duckduckgo-search
 tavily-python
 pypdf
-sentence-transformers
 faiss-cpu
 pymupdf
 httpx

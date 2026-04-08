@@ -32,10 +32,10 @@ _model = None
 def get_embeddings():
     global _embeddings
     if _embeddings is None:
-        from langchain_huggingface import HuggingFaceEmbeddings
-        print("[RAG] Loading embeddings model...")
-        _embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        from langchain_huggingface import HuggingFaceEndpointEmbeddings
+        print("[RAG] Loading remote embeddings model via API...")
+        _embeddings = HuggingFaceEndpointEmbeddings(
+            model="sentence-transformers/all-MiniLM-L6-v2",
         )
         print("[RAG] Embeddings model loaded.")
     return _embeddings
