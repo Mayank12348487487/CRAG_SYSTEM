@@ -10,7 +10,6 @@ from langchain_community.vectorstores import FAISS
 from typing import TypedDict, List, Optional
 from langgraph.graph import StateGraph, START, END
 from langchain_community.document_loaders import PyMuPDFLoader
-from langchain_huggingface import ChatHuggingFace, HuggingFaceEmbeddings, HuggingFaceEndpoint
 from pydantic import BaseModel, Field
 from langchain_core.output_parsers import JsonOutputParser
 from tavily import TavilyClient
@@ -37,6 +36,7 @@ _model = None
 def get_embeddings():
     global _embeddings
     if _embeddings is None:
+        from langchain_huggingface import HuggingFaceEmbeddings
         print("[RAG] Loading embeddings model...")
         _embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
@@ -47,6 +47,7 @@ def get_embeddings():
 def get_model():
     global _model
     if _model is None:
+        from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
         print("[RAG] Loading LLM...")
         llm = HuggingFaceEndpoint(repo_id="meta-llama/Llama-3.1-8B-Instruct")
         _model = ChatHuggingFace(llm=llm)
