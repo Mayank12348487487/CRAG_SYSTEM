@@ -4,8 +4,8 @@ import os
 
 load_dotenv()
 
-MONGODB_URI = os.getenv("MONGODB_URI") or os.getenv("MONGO_URI") or "mongodb://localhost:27017"
-DB_NAME = "crag_system"
+MONGODB_URI = os.getenv("MONGODB_URI") or os.getenv("MONGO_URI")
+DB_NAME = "crag"
 
 # Add a timeout so it doesn't hang the entire app if the database is down
 client = AsyncIOMotorClient(
