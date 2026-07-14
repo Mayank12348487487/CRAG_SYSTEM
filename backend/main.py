@@ -36,7 +36,7 @@ app.add_middleware(
         "https://crag-system-pdf.onrender.com",
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
